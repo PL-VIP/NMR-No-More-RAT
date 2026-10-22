@@ -64,19 +64,6 @@ Keep the quotation marks when your launcher has a single JVM-arguments text fiel
 
 Open the instance's **Options** or **Settings**, find Java/JVM arguments, then paste the exact value copied by No More RAT. The project does not directly edit Modrinth profiles because their internal settings format can vary.
 
-### Official Minecraft Launcher
-
-From the project folder, run:
-
-```powershell
-.\tools\install-agent.ps1
-```
-
-It creates a dated backup of `launcher_profiles.json` and updates matching Fabric 1.21.4 profiles. To undo it:
-
-```powershell
-.\tools\remove-agent.ps1
-```
 
 ## Choose a protection mode
 
