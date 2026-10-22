@@ -30,3 +30,7 @@ A process is blocked before `Runtime.exec` or `ProcessBuilder.start`. The logged
 ## Recommended layered defense
 
 Use a separate operating-system account, restrict directory permissions, enable a default-deny system firewall, install mods only from trusted sources, verify SHA-256 hashes, and run Minecraft in a sandbox or container where practical. Strong egress guarantees require enforcement outside the JVM.
+
+## Local policy data
+
+For supported NIO write paths, No More RAT denies untrusted mod attempts to alter files below `config/no-more-rat/`, including `rules.json` and the extracted agent. The trusted No More RAT UI is excluded from its own call-site hooks so it can save a decision. This is a defence against ordinary instrumented Java mod code, not protection against native code, an additional agent, an uninstrumented file API, or another process with access to the same user account.

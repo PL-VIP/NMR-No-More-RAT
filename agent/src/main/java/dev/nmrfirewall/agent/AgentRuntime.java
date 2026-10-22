@@ -57,7 +57,10 @@ final class AgentRuntime {
             reloadIfChanged();
             SourceResolver.Resolved resolved = SOURCES.resolve();
             SecurityRequest request = new SecurityRequest(operation, resolved.identity(), target, parameters);
-            PolicyResult result = engine.evaluate(request);
+            // The agent and the trusted UI are excluded from instrumentation. Every other supported
+            // NIO write into this directory is therefore an untrusted attempt to alter policy/log state.
+            PolicyResult result = operation == OperationType.FILE_WRITE && ProtectedPath.contains(configFile.getParent(), target)
+                    ? new PolicyResult(Decision.DENY, "protected-no-more-rat-data") : engine.evaluate(request);
             Decision finalDecision = resolveAsk(request, result);
             SecurityEvent event = new SecurityEvent(UUID.randomUUID(), Instant.now(), operation, resolved.identity(),
                     target, parameters, resolved.stack(), result.ruleId(), finalDecision);
@@ -144,7 +147,7 @@ final class AgentRuntime {
 
     @SuppressWarnings("unchecked")
     private static java.util.concurrent.CompletableFuture<Decision> requestThroughSharedBridge(SecurityRequest request) {
-        Object bridge = System.getProperties().get("nmr.prompt.bridge");
+        Object bridge = trustedPromptBridge();
         if (bridge == null) return null;
         try {
             var source = request.source();
@@ -161,7 +164,7 @@ final class AgentRuntime {
     }
 
     private static void notifySharedBridge(SecurityRequest request) {
-        Object bridge = System.getProperties().get("nmr.prompt.bridge");
+        Object bridge = trustedPromptBridge();
         if (bridge == null) return;
         try {
             var source = request.source();
@@ -176,6 +179,18 @@ final class AgentRuntime {
     private static boolean isLikelyRenderThread() {
         String name = Thread.currentThread().getName().toLowerCase(java.util.Locale.ROOT);
         return name.contains("render") || name.equals("client thread");
+    }
+
+    private static volatile Object trustedBridge;
+
+    /** Cache only the concrete UI endpoint; a later System-property replacement cannot grant ALLOW. */
+    private static Object trustedPromptBridge() {
+        Object cached = trustedBridge;
+        if (cached != null) return cached;
+        Object candidate = System.getProperties().get("nmr.prompt.bridge");
+        if (candidate == null || !candidate.getClass().getName().equals("dev.nmrfirewall.fabric.PromptBridgeEndpoint")) return null;
+        trustedBridge = candidate;
+        return candidate;
     }
 
     private static void reloadIfChanged() {

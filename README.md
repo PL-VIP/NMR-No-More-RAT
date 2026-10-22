@@ -41,7 +41,7 @@ For each event, the interface can show the requesting mod, target, calling class
 
 ## Install
 
-1. Download or build `no-more-rat-1.0.0.jar` and place it in your instance's `mods` folder.
+1. Download or build `no-more-rat-1.1.0.jar` and place it in your instance's `mods` folder.
 2. Start Minecraft once. The mod extracts its bundled agent here:
 
    ```text
@@ -88,7 +88,7 @@ Open **No More RAT Security → Settings**. Changes are drafts until you press *
 | **Ask before each operation** | Asks for every supported category. A missing UI, timeout, or render-thread request still fails closed. |
 | **Block all by default** | Blocks supported operations unless a saved rule explicitly permits them. |
 
-Under **Operation controls**, override each category individually with **Default**, **Ask**, **Block**, or **Allow**. Existing saved rules have priority over profile and category choices. An explicit **Ask** for a category can override strict mode's default block; broad high-risk allow rules remain guarded.
+Under **Operation controls**, override each category individually with **Default**, **Ask**, **Block**, or **Allow**. Existing saved rules have priority over profile and category choices. An explicit **Ask** for a category can override strict mode's default block; broad high-risk allow rules remain guarded. Choosing **Trust this action** records only the requesting mod's exact JAR hash, operation, and target — it is not blanket trust for a mod.
 
 Settings also control the decision timeout, in-memory event buffer, and whether allowed operations are logged. Denials are always logged. The disk log rotates at 5 MiB.
 
@@ -117,8 +117,8 @@ With Java 21 installed:
 Build outputs:
 
 ```text
-fabric/build/libs/no-more-rat-1.0.0.jar       Fabric mod with embedded agent
-agent/build/libs/no-more-rat-agent-1.0.0.jar  Standalone Java agent
+fabric/build/libs/no-more-rat-1.1.0.jar       Fabric mod with embedded agent
+agent/build/libs/no-more-rat-agent-1.1.0.jar  Standalone Java agent
 ```
 
 The automated checks cover policy rules, changed artifact hashes, configuration persistence, bytecode transformation, class-loader isolation, and pre-operation blocking for supported HTTP, TCP, file-write, process, and reflection paths. Details are in the [test matrix](docs/TEST_MATRIX.md).

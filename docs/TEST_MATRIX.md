@@ -10,6 +10,8 @@
 | Secret redaction | `SecretRedactorTest` | tokens and passwords do not appear in the result |
 | Import/export | `PolicyStoreTest` | configuration values survive serialization |
 | Protection controls | `ConfigControlsTest` | category overrides and presets apply with documented precedence; legacy settings remain compatible; saving preferences preserves rules; invalid settings cannot overwrite the configuration |
+| Permission risk explanation | `SecurityRequestRiskTest` | user-facing risk levels classify supported operations without changing policy decisions |
+| Firewall data path | `ProtectedPathTest` | paths inside `config/no-more-rat` are recognized as protected from supported untrusted file writes |
 | Branding and translations | `MetadataAndLanguageTest` | metadata links to the project, the square icon is readable, and English/Polish keys and placeholder counts match |
 | Instrumentation scope | `SecurityTransformerTest` | nested Modrinth profile paths and source-less custom-loader classes receive guards; launcher code outside mod paths is ignored |
 | Denial before execution | `TransformedDenialIntegrationTest` | the call throws `BlockedOperationException` before `start()` |

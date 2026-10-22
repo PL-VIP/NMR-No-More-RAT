@@ -137,7 +137,8 @@ final class SecurityTransformer implements ClassFileTransformer {
             return OperationType.HTTP;
         }
         if ((owner.equals("okhttp3/Call") && (name.equals("execute") || name.equals("enqueue")))
-                || (owner.startsWith("org/apache/hc/client5/http/") && name.equals("execute"))) {
+                || (owner.startsWith("org/apache/hc/client5/http/") && name.equals("execute"))
+                || (owner.startsWith("org/apache/http/client/") && name.equals("execute"))) {
             return OperationType.HTTP;
         }
         if ((owner.equals("java/net/Socket") && name.equals("connect"))
