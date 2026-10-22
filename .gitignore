@@ -1,0 +1,38 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Minecraft/Fabric development runtime
+run/
+fabric/run/
+logs/
+crash-reports/
+saves/
+screenshots/
+config/no-more-rat/
+
+# IDEs and editors
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and local environment files
+*.log
+*.hprof
+*.lck
+.env
+.env.*
+!.env.example
+
+# Release artifacts: build them locally or publish them through releases
+*.jar
+!gradle/wrapper/gradle-wrapper.jar

@@ -1,0 +1,130 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow'
+}
+
+sourceSets {
+    bootstrap { java.srcDir 'src/bootstrap/java' }
+}
+
+dependencies {
+    compileOnly sourceSets.bootstrap.output
+    testImplementation sourceSets.bootstrap.output
+}
+
+tasks.register('bootstrapJar', Jar) {
+    archiveBaseName = 'nmr-bootstrap'
+    from sourceSets.bootstrap.output
+}
+
+processResources {
+    from(tasks.named('bootstrapJar')) {
+        into 'nmr-bootstrap'
+        // Shadow expands resources ending in .jar; keep the bootstrap archive opaque.
+        rename { 'bridge.bin' }
+    }
+}
+
+dependencies {
+    implementation project(':core')
+    implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'org.ow2.asm:asm:9.7.1'
+    implementation 'org.ow2.asm:asm-commons:9.7.1'
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+jar {
+    manifest {
+        attributes(
+            'Premain-Class': 'dev.nmrfirewall.agent.NoMoreRatAgent',
+            'Agent-Class': 'dev.nmrfirewall.agent.NoMoreRatAgent',
+            'Can-Redefine-Classes': 'true',
+            'Can-Retransform-Classes': 'true'
+        )
+    }
+}
+
+shadowJar {
+    archiveBaseName = 'no-more-rat-agent'
+    archiveClassifier = ''
+    mergeServiceFiles()
+    relocate 'org.objectweb.asm', 'dev.nmrfirewall.agent.internal.asm'
+    relocate 'com.google.gson', 'dev.nmrfirewall.agent.internal.gson'
+    manifest.inheritFrom tasks.jar.manifest
+}
+
+tasks.build.dependsOn tasks.shadowJar
+
+tasks.register('verifyAgentIsolation') {
+    dependsOn tasks.shadowJar
+    inputs.file(tasks.shadowJar.archiveFile)
+    doLast {
+        def archive = inputs.files.singleFile
+        def exposed = []
+        new java.util.zip.ZipFile(archive).withCloseable { zip ->
+            exposed = zip.entries().findAll {
+                it.name.startsWith('org/objectweb/asm/') || it.name.startsWith('com/google/gson/')
+                    || it.name.startsWith('dev/nmrfirewall/bootstrap/')
+            }*.name
+        }
+        if (!exposed.empty) {
+            throw new GradleException("Agent exposes dependency classes on the game classpath: ${exposed}")
+        }
+        new java.util.zip.ZipFile(archive).withCloseable { zip ->
+            if (zip.getEntry('nmr-bootstrap/bridge.bin') == null) {
+                throw new GradleException('Agent is missing the isolated bootstrap guard archive')
+            }
+        }
+    }
+}
+
+tasks.check.dependsOn tasks.verifyAgentIsolation
+
+sourceSets {
+    smoke {
+        java.srcDir 'src/smoke/java'
+    }
+}
+
+dependencies {
+    smokeImplementation 'net.fabricmc:fabric-loader:0.19.5'
+    smokeImplementation 'org.ow2.asm:asm:9.10.1'
+    smokeImplementation 'net.fabricmc:sponge-mixin:0.17.4+mixin.0.8.7'
+}
+
+tasks.register('smokeModJar', Jar) {
+    from(sourceSets.smoke.output) { include 'untrusted/smoke/AgentSmoke*.class' }
+    archiveFileName = 'guard-fixture.jar'
+    destinationDirectory = layout.buildDirectory.dir('knot-profile/mods')
+}
+
+tasks.register('smokeKnotIsolation', JavaExec) {
+    dependsOn tasks.shadowJar, tasks.smokeModJar
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'dev.nmrfirewall.smoke.GuardIsolationSmoke'
+    args tasks.smokeModJar.archiveFile.get().asFile.absolutePath
+    jvmArgs "-javaagent:${tasks.shadowJar.archiveFile.get().asFile.absolutePath}=config=${layout.buildDirectory.dir('knot-smoke-config').get().asFile.absolutePath}"
+}
+
+tasks.register('smokeAgent', JavaExec) {
+    dependsOn tasks.shadowJar, tasks.smokeClasses
+    classpath = sourceSets.smoke.output
+    mainClass = 'untrusted.smoke.AgentSmoke'
+    jvmArgs '-Dnmr.agent.testAll=true', "-javaagent:${tasks.shadowJar.archiveFile.get().asFile.absolutePath}=config=${layout.buildDirectory.dir('smoke-config').get().asFile.absolutePath}"
+}
+
+tasks.register('smokeFabricClasspath', JavaExec) {
+    dependsOn tasks.shadowJar, tasks.smokeClasses
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'untrusted.smoke.FabricClasspathSmoke'
+    jvmArgs "-javaagent:${tasks.shadowJar.archiveFile.get().asFile.absolutePath}=config=${layout.buildDirectory.dir('fabric-smoke-config').get().asFile.absolutePath}"
+}
+
+tasks.check.dependsOn tasks.smokeAgent, tasks.smokeFabricClasspath, tasks.smokeKnotIsolation
+
+tasks.test {
+    systemProperty 'nmr.agent.testAll', 'true'
+    def sampleJar = providers.systemProperty('nmr.sampleJar')
+    if (sampleJar.isPresent()) systemProperty 'nmr.sampleJar', sampleJar.get()
+}

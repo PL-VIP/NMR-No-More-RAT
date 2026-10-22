@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "no_more_rat",
+  "version": "${version}",
+  "name": "No More RAT",
+  "description": "Take control of what your mods can do. Ask, block or allow supported network requests, file changes and process launches before they happen, with per-operation settings and local activity logs. Requires the bundled Java agent for enforcement; not a complete sandbox.",
+  "authors": ["PL-VIP", "No More RAT contributors"],
+  "icon": "assets/no_more_rat/icon.png",
+  "contact": {
+    "homepage": "https://github.com/PL-VIP/NMR-No-More-RAT",
+    "sources": "https://github.com/PL-VIP/NMR-No-More-RAT",
+    "issues": "https://github.com/PL-VIP/NMR-No-More-RAT/issues"
+  },
+  "license": "MPL-2.0",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.nmrfirewall.fabric.NoMoreRatClient"]
+  },
+  "mixins": ["no_more_rat.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "1.21.4",
+    "java": ">=21",
+    "fabric-api": ">=0.118.0+1.21.4"
+  }
+}

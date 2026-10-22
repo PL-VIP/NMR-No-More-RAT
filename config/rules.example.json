@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "strictMode": true,
+  "unknownSourceDecision": "DENY",
+  "defaultDecision": "ASK",
+  "promptTimeoutSeconds": 15,
+  "maxLogEntries": 2000,
+  "logAllowedOperations": true,
+  "operationDecisions": {
+    "HTTP": "ASK",
+    "TCP_CONNECT": "ASK",
+    "TCP_LISTEN": "DENY",
+    "UDP": "ASK",
+    "FILE_WRITE": "ASK",
+    "PROCESS_START": "DENY",
+    "DYNAMIC_CODE": "DENY",
+    "SECRET_ACCESS": "DENY"
+  },
+  "rules": [
+    {
+      "id": "block-example-domain",
+      "enabled": true,
+      "decision": "DENY",
+      "operation": "HTTP",
+      "modId": null,
+      "version": null,
+      "artifactSha256": null,
+      "targetPattern": "*example.invalid*",
+      "processPermission": false
+    }
+  ]
+}

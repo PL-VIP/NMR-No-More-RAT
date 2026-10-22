@@ -1,0 +1,40 @@
+plugins {
+    id 'fabric-loom'
+}
+
+base { archivesName = project.archives_base_name }
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation project(':core')
+    include project(':core')
+    include 'com.google.code.gson:gson:2.11.0'
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+loom {
+    runs {
+        client {
+            client()
+            vmArg "-javaagent:${project(':agent').tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath}"
+            runDir 'run'
+        }
+    }
+}
+
+tasks.named('runClient').configure { dependsOn project(':agent').tasks.named('shadowJar') }
+
+processResources {
+    def modVersion = project.version.toString()
+    inputs.property 'version', modVersion
+    filesMatching('fabric.mod.json') { expand 'version': modVersion }
+    dependsOn project(':agent').tasks.named('shadowJar')
+    from(project(':agent').tasks.named('shadowJar').flatMap { it.archiveFile }) {
+        into 'nmr-agent'
+        rename { 'no-more-rat-agent.jar' }
+    }
+}
