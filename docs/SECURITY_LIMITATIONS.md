@@ -23,7 +23,7 @@ For supported standard JDK requests, metadata includes host/port, selected decla
 
 By default, a supported request with a known enabled automatic-redirect policy is denied before its first transmission. This is a conservative compatibility trade-off, not per-hop inspection. Unknown/custom redirect policies and `URL.openStream` are not covered by that check. Disabling `blockAutomaticHttpRedirects` allows a library to follow destinations that NMR has not separately approved.
 
-New HTTP event targets hide paths, query values, user information and fragments. Hostnames remain visible and could themselves contain sensitive information. New remembered rules fingerprint the exact target; fingerprints are not encryption and may reveal guessable values through comparison. Legacy rules/logs are not migrated. Remembered HTTP rules do not bind the request method, headers or body; a later request to the same target may send different data. No response interception, content-based secret detection, archive analysis or quarantine is implemented.
+New HTTP event targets hide paths, query values, user information and fragments. Discord webhook targets retain their API route and numeric webhook ID for diagnosis, but hide the final credential segment. Hostnames remain visible and could themselves contain sensitive information. New remembered rules fingerprint the exact target; fingerprints are not encryption and may reveal guessable values through comparison. Legacy rules/logs are not migrated. Remembered HTTP rules do not bind the request method, headers or body; a later request to the same target may send different data. No response interception, content-based secret detection, archive analysis or quarantine is implemented.
 
 ## Files
 

@@ -119,8 +119,17 @@ public final class HttpInspection {
             if (uri.getHost() == null || !("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme())))
                 return "HTTP target unavailable";
             return bounded(uri.getScheme() + "://" + uri.getHost() + (uri.getPort() < 0 ? "" : ":" + uri.getPort())
-                    + (uri.getRawPath() == null || uri.getRawPath().isEmpty() || uri.getRawPath().equals("/") ? "/" : "/<path hidden>")
+                    + displayPath(uri.getRawPath())
                     + (uri.getRawQuery() == null ? "" : "?<query hidden>"), 400);
         } catch (IllegalArgumentException malformed) { return "HTTP target unavailable"; }
+    }
+
+    /** Discord webhook URLs contain a credential as their final path segment. */
+    private static String displayPath(String rawPath) {
+        if (rawPath == null || rawPath.isEmpty() || rawPath.equals("/")) return "/";
+        if (rawPath.matches("(?i)^/api/webhooks/[0-9]+/[^/]+$")) {
+            return rawPath.replaceFirst("(?i)^(/api/webhooks/[0-9]+)/[^/]+$", "$1/<webhook token hidden>");
+        }
+        return "/<path hidden>";
     }
 }

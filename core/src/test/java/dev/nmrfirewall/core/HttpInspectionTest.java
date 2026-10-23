@@ -102,6 +102,13 @@ class HttpInspectionTest {
         assertFalse(event.target().contains("fake"));
     }
 
+    @Test void discordWebhookEndpointKeepsTheUsefulRouteButHidesItsCredential() {
+        String target = "https://discord.com/api/webhooks/123456789/fake-webhook-token?wait=true";
+        assertEquals("https://discord.com/api/webhooks/123456789/<webhook token hidden>?<query hidden>",
+                HttpInspection.displayTarget(target));
+        assertFalse(HttpInspection.displayTarget(target).contains("fake-webhook-token"));
+    }
+
     @Test void redirectProtectionTakesPrecedenceOverSavedAllowAndCanBeConfigured() {
         PolicyConfig config = new PolicyConfig();
         config.rules.add(new PolicyRule(null, true, Decision.ALLOW, OperationType.HTTP, null, null, null, null, false));
