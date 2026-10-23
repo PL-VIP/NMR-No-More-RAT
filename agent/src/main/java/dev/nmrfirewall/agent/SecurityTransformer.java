@@ -46,7 +46,7 @@ final class SecurityTransformer implements ClassFileTransformer {
                                 String api = owner.replace('/', '.') + "#" + methodName;
                                 if (owner.equals("java/net/http/HttpClient")
                                         && (methodName.equals("send") || methodName.equals("sendAsync"))) {
-                                    captureArgument(type, api, methodDescriptor, 0);
+                                    captureHttpClient(type, api, methodDescriptor);
                                 } else if (owner.equals("java/nio/file/Files")) {
                                     captureArgument(type, api, methodDescriptor,
                                             methodName.equals("copy") || methodName.equals("move") ? 1 : 0);
@@ -93,6 +93,35 @@ final class SecurityTransformer implements ClassFileTransformer {
                                 Type argument = arguments[argumentIndex + i + 1];
                                 super.visitVarInsn(argument.getOpcode(Opcodes.ILOAD), locals[i]);
                             }
+                        }
+
+                        private void captureHttpClient(OperationType type, String api, String descriptor) {
+                            Type[] arguments = Type.getArgumentTypes(descriptor);
+                            int[] locals = new int[arguments.length];
+                            for (int i = arguments.length - 1; i >= 0; i--) {
+                                locals[i] = newLocal(arguments[i]);
+                                super.visitVarInsn(arguments[i].getOpcode(Opcodes.ISTORE), locals[i]);
+                            }
+                            int receiver = newLocal(Type.getType(Object.class));
+                            super.visitVarInsn(Opcodes.ASTORE, receiver);
+                            // Pass only bootstrap-safe Object[] across the Knot/agent boundary.
+                            super.visitInsn(Opcodes.ICONST_2);
+                            super.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
+                            super.visitInsn(Opcodes.DUP);
+                            super.visitInsn(Opcodes.ICONST_0);
+                            super.visitVarInsn(Opcodes.ALOAD, receiver);
+                            super.visitInsn(Opcodes.AASTORE);
+                            super.visitInsn(Opcodes.DUP);
+                            super.visitInsn(Opcodes.ICONST_1);
+                            super.visitVarInsn(Opcodes.ALOAD, locals[0]);
+                            super.visitInsn(Opcodes.AASTORE);
+                            super.visitLdcInsn(type.name());
+                            super.visitLdcInsn(api);
+                            super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOKS, "beforeObject",
+                                    "(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V", false);
+                            super.visitVarInsn(Opcodes.ALOAD, receiver);
+                            for (int i = 0; i < arguments.length; i++)
+                                super.visitVarInsn(arguments[i].getOpcode(Opcodes.ILOAD), locals[i]);
                         }
                     };
                 }

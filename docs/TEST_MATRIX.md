@@ -23,6 +23,9 @@
 | Local suspicious sample (opt-in) | `SampleJarStaticRegressionTest` | without loading its classes, transformed bytecode contains HTTP, file-write, process, and reflection guards |
 | Alternative paths | `explicitlyRevealsKnownUninstrumentedAlternatives` | Unsafe and IO constructors remain explicitly documented gaps |
 | Unknown source/timeout | `AgentEnforcementTest` | failure to obtain a decision is denied |
+| HTTP metadata/privacy | `HttpInspectionTest` | inspection does not consume streams or invoke custom publishers; metadata omits credential values; URL display hides private components; exact-target fingerprints survive persistence without wildcard expansion |
+| Redirect policy precedence | `HttpInspectionTest` | enabled automatic redirects are denied before a saved allow rule unless protection is disabled |
+| Real loopback HTTP consent | `agent:smokeHttpConsent` | a real Java agent guards synchronous send and both asynchronous overloads; pending/denied/timed-out requests reach neither the server nor the body supplier; allow-once sends exactly once; enabled redirects are blocked before sending; logs omit synthetic secrets |
 
 ## Verified by the build
 
@@ -37,6 +40,8 @@
 A clean development client (Minecraft 1.21.4, Fabric Loader 0.19.5, Java 21) started with the security agent active. The dashboard, profile settings, operation controls, and operation pagination were visually inspected in a small window. No policy values were changed during this UI check. The client shut down normally. This was not a run of untrusted mods and does not demonstrate complete sandboxing.
 
 ## Runtime coverage limits
+
+On 2026-10-23 the updated development client started with Fabric Loader 0.19.5 and the agent active, reaching resource/audio initialization without a startup crash. Visual verification of the new HTTP prompt was blocked by the desktop automation tool failing to initialize (`failed to write kernel assets`, missing path). The preview is available for manual inspection; this run is not reported as a completed UI test.
 
 CI does not yet run a complete Minecraft client against real HTTPS/TCP/UDP services or a local TLS server. A successful compilation is not presented as a full client runtime test. JNI and Unsafe are outside the stated boundary, so there is no bypass-prevention test for them; the audit test instead confirms that the classifier does not claim to intercept those paths. Completed-download SHA-256 testing is absent because that feature is not implemented. The local sample regression is opt-in because malware samples must never be committed to the repository; run it with `-Dnmr.sampleJar=<path>`.
 

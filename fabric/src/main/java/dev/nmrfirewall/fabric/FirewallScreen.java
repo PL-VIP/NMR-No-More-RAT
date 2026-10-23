@@ -59,6 +59,10 @@ public final class FirewallScreen extends Screen {
             addDrawableChild(ButtonWidget.builder(Text.translatable("no_more_rat.action.add_rule"), b ->
                     client.setScreen(new RuleEditorScreen(this))).dimensions(width - 122, 60, 110, 20).build());
         }
+        if (tab == Tab.OVERVIEW) {
+            addDrawableChild(ButtonWidget.builder(Text.translatable("no_more_rat.action.preview"), b ->
+                    client.setScreen(FirewallPromptScreen.preview(this))).dimensions(width - 122, 60, 110, 20).build());
+        }
         refreshRows();
     }
 

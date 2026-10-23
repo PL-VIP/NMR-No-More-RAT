@@ -98,6 +98,8 @@ final class FirewallSettingsScreen extends Screen {
                     () -> draft.unknownSourceDecision = next(draft.unknownSourceDecision)));
             rows.add(new Row(t("config.strict"), t("config.strict.help"), () -> enabled(draft.strictMode),
                     () -> draft.strictMode = !draft.strictMode));
+            rows.add(new Row(t("config.redirects"), t("config.redirects.help"), () -> enabled(draft.blockAutomaticHttpRedirects),
+                    () -> draft.blockAutomaticHttpRedirects = !draft.blockAutomaticHttpRedirects));
             rows.add(new Row(t("config.timeout"), t("config.timeout.help"),
                     () -> Text.translatable("no_more_rat.config.seconds", draft.promptTimeoutSeconds),
                     () -> draft.promptTimeoutSeconds = nextNumber(draft.promptTimeoutSeconds, new int[]{5, 15, 30, 60, 120, 300})));
@@ -119,7 +121,8 @@ final class FirewallSettingsScreen extends Screen {
     private boolean matchesPreset(PolicyConfig.Preset preset) {
         PolicyConfig candidate = new PolicyConfig();
         candidate.applyPreset(preset);
-        if (draft.strictMode != candidate.strictMode || draft.defaultDecision != candidate.defaultDecision
+        if (draft.blockAutomaticHttpRedirects != candidate.blockAutomaticHttpRedirects
+                || draft.strictMode != candidate.strictMode || draft.defaultDecision != candidate.defaultDecision
                 || draft.unknownSourceDecision != candidate.unknownSourceDecision) return false;
         for (OperationType operation : OperationType.values()) {
             if (draft.decisionFor(operation) != candidate.decisionFor(operation)) return false;

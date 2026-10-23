@@ -17,6 +17,9 @@ public record SecurityRequest(OperationType operation, SourceIdentity source, St
     }
 
     public RiskLevel riskLevel() {
+        if (operation == OperationType.HTTP && ("true".equals(parameters.get("sensitiveHeaders"))
+                || "true".equals(parameters.get("urlPrivateParts")) || "true".equals(parameters.get("codeOrArchive"))
+                || "enabled".equals(parameters.get("redirects")))) return RiskLevel.HIGH;
         return switch (operation) {
             case PROCESS_START, DYNAMIC_CODE, SECRET_ACCESS -> RiskLevel.CRITICAL;
             case TCP_LISTEN, FILE_WRITE -> RiskLevel.HIGH;

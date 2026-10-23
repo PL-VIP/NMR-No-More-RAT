@@ -6,6 +6,7 @@
   "promptTimeoutSeconds": 15,
   "maxLogEntries": 2000,
   "logAllowedOperations": true,
+  "blockAutomaticHttpRedirects": true,
   "operationDecisions": {
     "HTTP": "ASK",
     "TCP_CONNECT": "ASK",

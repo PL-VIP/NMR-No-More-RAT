@@ -32,14 +32,20 @@ final class FirewallBlockedScreen extends Screen {
                 : Text.translatable("no_more_rat.blocked.operation", request.source().name(), request.operation());
         context.drawCenteredTextWithShadow(textRenderer, action, width / 2, height / 2 - 42, 0xFFFFFF);
         context.drawCenteredTextWithShadow(textRenderer,
-                textRenderer.trimToWidth(Text.translatable("no_more_rat.prompt.target", request.target()).getString(), Math.max(100, width - 40)),
+                textRenderer.trimToWidth(Text.translatable("no_more_rat.prompt.target", request.operation() == OperationType.HTTP
+                        ? dev.nmrfirewall.core.HttpInspection.displayTarget(request.target())
+                        : dev.nmrfirewall.core.SecretRedactor.redact(request.target())).getString(), Math.max(100, width - 40)),
                 width / 2, height / 2 - 22, 0xFFE080);
         context.drawCenteredTextWithShadow(textRenderer,
                 textRenderer.trimToWidth(Text.translatable("no_more_rat.blocked.class", request.source().callerClass()).getString(), Math.max(100, width - 40)),
                 width / 2, height / 2 - 2, 0xC0C0C0);
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.translatable("no_more_rat.blocked.render_thread"),
-                width / 2, height / 2 + 20, 0xA0D8FF);
+        Text reason = Text.translatable("automatic-http-redirects".equals(request.parameters().get("blockReason"))
+                ? "no_more_rat.blocked.redirects" : "no_more_rat.blocked.render_thread");
+        int y = height / 2 + 20;
+        for (var line : textRenderer.wrapLines(reason, Math.max(100, width - 40))) {
+            context.drawCenteredTextWithShadow(textRenderer, line, width / 2, y, 0xA0D8FF);
+            y += 10;
+        }
     }
 
     @Override public void close() { client.setScreen(parent); }

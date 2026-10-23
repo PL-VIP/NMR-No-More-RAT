@@ -92,6 +92,18 @@ Under **Operation controls**, override each category individually with **Default
 
 Settings also control the decision timeout, in-memory event buffer, and whether allowed operations are logged. Denials are always logged. The disk log rotates at 5 MiB.
 
+## HTTP inspection before sending
+
+Supported JDK HTTP calls now pass request metadata to the permission screen: host and port, method, declared content type, and body byte length when safely available. Warnings flag credential-like header names, unencrypted HTTP, private URL components, and archive/executable filename extensions. These are indicators, **not malware detection**. Unknown or uninspected data is explicitly labelled; the inspector never subscribes to a body publisher or reads a request stream.
+
+The paginated prompt keeps decision buttons visible and asks for confirmation before remembering an allow rule. **Preview HTTP warning** on the dashboard opens a synthetic example without sending a request or saving permissions.
+
+**Compatibility change:** `blockAutomaticHttpRedirects` defaults to `true`, including when loading older configurations. For supported JDK clients whose redirect policy can be read, it rejects the original request before transmission if automatic redirects are enabled, even when an allow rule exists. It does not inspect each redirect hop. `HttpURLConnection` commonly enables redirects by default. Prefer disabling automatic redirects in the calling mod; disabling this protection in NMR settings permits unchecked redirect destinations. Custom clients and APIs with unknown redirect policy are not covered by this safeguard.
+
+HTTP paths, query values, user information, and fragments are hidden in new event targets and warning screens. Newly remembered targets use a SHA-256 fingerprint instead of storing the raw URL. Existing rules/logs are not rewritten. A remembered HTTP permission covers the same artifact, operation and target, **not a particular method, header set or body**; use **Allow once** for sensitive requests.
+
+This update does not inspect body contents or responses, scan downloaded JAR/ZIP files, quarantine downloads, or modify TLS certificates. See [security limitations](docs/SECURITY_LIMITATIONS.md). Update both the Fabric mod and the Java agent together; the metadata bridge requires matching builds.
+
 ## Rules and local data
 
 No More RAT stores data locally at `config/no-more-rat/`:

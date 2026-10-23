@@ -12,6 +12,10 @@ public final class PolicyEngine {
 
     public PolicyResult evaluate(SecurityRequest request) {
         PolicyConfig current = config.get();
+        if (current.blockAutomaticHttpRedirects && request.operation() == OperationType.HTTP
+                && "enabled".equals(request.parameters().get("redirects"))) {
+            return new PolicyResult(Decision.DENY, "automatic-http-redirects");
+        }
         List<PolicyRule> rules = List.copyOf(current.rules);
         for (PolicyRule rule : rules) {
             if (rule.matches(request, current.strictMode)) return new PolicyResult(rule.decision(), rule.id());

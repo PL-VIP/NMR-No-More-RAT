@@ -10,6 +10,7 @@ import dev.nmrfirewall.core.PolicyResult;
 import dev.nmrfirewall.core.PolicyStore;
 import dev.nmrfirewall.core.SecurityEvent;
 import dev.nmrfirewall.core.SecurityRequest;
+import dev.nmrfirewall.core.HttpInspection;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
@@ -66,6 +67,11 @@ final class AgentRuntime {
                     target, parameters, resolved.stack(), result.ruleId(), finalDecision);
             if (journal != null && (finalDecision != Decision.ALLOW || engine.config().logAllowedOperations)) journal.append(event);
             if (finalDecision != Decision.ALLOW) {
+                if ("automatic-http-redirects".equals(result.ruleId())) {
+                    var notice = new java.util.HashMap<>(parameters);
+                    notice.put("blockReason", "automatic-http-redirects");
+                    notifySharedBridge(new SecurityRequest(operation, resolved.identity(), target, notice));
+                }
                 throw new BlockedOperationException("No More RAT blocked " + operation + " from "
                         + resolved.identity().modId() + " (rule: " + result.ruleId() + ")");
             }
@@ -84,17 +90,28 @@ final class AgentRuntime {
     }
 
     private static TargetDescription describe(Object value, String fallback) {
+        if (value instanceof Object[] pair && pair.length == 2
+                && pair[0] instanceof java.net.http.HttpClient client && pair[1] instanceof java.net.http.HttpRequest request) {
+            String redirects = client.getClass().getModule() == java.net.http.HttpClient.class.getModule()
+                    ? (client.followRedirects() == java.net.http.HttpClient.Redirect.NEVER ? "disabled" : "enabled") : "unknown";
+            HttpInspection.Result inspected = HttpInspection.request(request, redirects);
+            return new TargetDescription(inspected.target(), inspected.parameters());
+        }
         if (value == null) return new TargetDescription(fallback, Map.of());
         if (value instanceof java.net.HttpURLConnection connection) {
-            return new TargetDescription(connection.getURL().toExternalForm(),
-                    Map.of("method", connection.getRequestMethod()));
+            HttpInspection.Result inspected = HttpInspection.connection(connection);
+            return new TargetDescription(inspected.target(), inspected.parameters());
         }
-        if (value instanceof java.net.URL url) return new TargetDescription(url.toExternalForm(), Map.of());
+        if (value instanceof java.net.URL url) {
+            HttpInspection.Result inspected = HttpInspection.url(url.toExternalForm());
+            return new TargetDescription(inspected.target(), inspected.parameters());
+        }
         if (value instanceof java.net.URLConnection connection) {
             return new TargetDescription(connection.getURL().toExternalForm(), Map.of());
         }
         if (value instanceof java.net.http.HttpRequest request) {
-            return new TargetDescription(request.uri().toString(), Map.of("method", request.method()));
+            HttpInspection.Result inspected = HttpInspection.request(request, "unknown");
+            return new TargetDescription(inspected.target(), inspected.parameters());
         }
         if (value instanceof java.net.SocketAddress address) return new TargetDescription(address.toString(), Map.of());
         if (value instanceof java.nio.file.Path path) {
@@ -152,10 +169,10 @@ final class AgentRuntime {
         try {
             var source = request.source();
             Object response = bridge.getClass().getMethod("request", String.class, String.class, String.class,
-                    String.class, String.class, String.class, String.class, String.class, String.class, String.class)
+                    String.class, String.class, String.class, String.class, String.class, String.class, Map.class)
                     .invoke(bridge, request.operation().name(), source.modId(), source.name(), source.version(),
                             source.jarName(), source.sha256(), source.callerClass(), source.confidence().name(),
-                            request.target(), request.parameters().getOrDefault("method", ""));
+                            request.target(), request.parameters());
             java.util.concurrent.CompletableFuture<?> raw = (java.util.concurrent.CompletableFuture<?>) response;
             return raw.thenApply(value -> Decision.valueOf(String.valueOf(value)));
         } catch (ReflectiveOperationException | RuntimeException failure) {
@@ -169,10 +186,10 @@ final class AgentRuntime {
         try {
             var source = request.source();
             bridge.getClass().getMethod("notifyBlocked", String.class, String.class, String.class,
-                    String.class, String.class, String.class, String.class, String.class, String.class, String.class)
+                    String.class, String.class, String.class, String.class, String.class, String.class, Map.class)
                     .invoke(bridge, request.operation().name(), source.modId(), source.name(), source.version(),
                             source.jarName(), source.sha256(), source.callerClass(), source.confidence().name(),
-                            request.target(), request.parameters().getOrDefault("method", ""));
+                            request.target(), request.parameters());
         } catch (ReflectiveOperationException | RuntimeException ignored) { }
     }
 

@@ -13,6 +13,7 @@ public final class PolicyConfig {
     public int promptTimeoutSeconds = 15;
     public int maxLogEntries = 2000;
     public boolean logAllowedOperations = true;
+    public boolean blockAutomaticHttpRedirects = true;
     public Map<OperationType, Decision> operationDecisions = new EnumMap<>(OperationType.class);
     public List<PolicyRule> rules = new ArrayList<>();
 
@@ -29,6 +30,7 @@ public final class PolicyConfig {
 
     public void applyPreset(Preset preset) {
         strictMode = true;
+        blockAutomaticHttpRedirects = true;
         defaultDecision = preset == Preset.BLOCK_ALL ? Decision.DENY : Decision.ASK;
         unknownSourceDecision = preset == Preset.ASK_ALL ? Decision.ASK : Decision.DENY;
         operationDecisions.clear();
@@ -51,6 +53,7 @@ public final class PolicyConfig {
         promptTimeoutSeconds = other.promptTimeoutSeconds;
         maxLogEntries = other.maxLogEntries;
         logAllowedOperations = other.logAllowedOperations;
+        blockAutomaticHttpRedirects = other.blockAutomaticHttpRedirects;
         operationDecisions = new EnumMap<>(OperationType.class);
         operationDecisions.putAll(other.operationDecisions);
     }

@@ -89,6 +89,7 @@ sourceSets {
 
 dependencies {
     smokeImplementation 'net.fabricmc:fabric-loader:0.19.5'
+    smokeImplementation project(':core')
     smokeImplementation 'org.ow2.asm:asm:9.10.1'
     smokeImplementation 'net.fabricmc:sponge-mixin:0.17.4+mixin.0.8.7'
 }
@@ -122,6 +123,14 @@ tasks.register('smokeFabricClasspath', JavaExec) {
 }
 
 tasks.check.dependsOn tasks.smokeAgent, tasks.smokeFabricClasspath, tasks.smokeKnotIsolation
+
+tasks.register('smokeHttpConsent', JavaExec) {
+    dependsOn tasks.shadowJar, tasks.smokeClasses
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'dev.nmrfirewall.smoke.HttpConsentSmoke'
+    jvmArgs '-Dnmr.agent.testAll=true', "-javaagent:${tasks.shadowJar.archiveFile.get().asFile.absolutePath}=config=${layout.buildDirectory.dir('http-consent-config').get().asFile.absolutePath}"
+}
+tasks.check.dependsOn tasks.smokeHttpConsent
 
 tasks.test {
     systemProperty 'nmr.agent.testAll', 'true'

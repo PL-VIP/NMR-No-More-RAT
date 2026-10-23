@@ -20,7 +20,8 @@ public record SecurityEvent(
         id = id == null ? UUID.randomUUID() : id;
         timestamp = timestamp == null ? Instant.now() : timestamp;
         source = source == null ? SourceIdentity.unknown("unknown") : source;
-        target = SecretRedactor.redact(target == null ? "unknown" : target);
+        target = operation == OperationType.HTTP ? HttpInspection.displayTarget(target)
+                : SecretRedactor.redact(target == null ? "unknown" : target);
         parameters = parameters == null ? Map.of() : parameters.entrySet().stream()
                 .collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey,
                         e -> SecretRedactor.redact(e.getValue())));

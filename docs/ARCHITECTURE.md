@@ -15,11 +15,15 @@ The transformer requires a class to come from a path containing a `mods` or `.fa
 5. `DENY` throws `BlockedOperationException` before the original instruction. `ASK` uses the asynchronous Minecraft UI; a timeout, missing UI, error, or render-thread request fails closed.
 6. A redacted event is appended to a rotating JSONL log.
 
-For `HttpClient.send/sendAsync`, the transformer preserves the operand stack, passes the `HttpRequest` to the hook, and restores the remaining arguments only after the decision. This exposes the HTTP method and URI before transmission. For `HttpURLConnection`, the hook reads `getRequestMethod()` and the URL before connection-triggering methods. Known NIO file writes similarly expose their destination path before execution.
+For `HttpClient.send/sendAsync`, the transformer preserves the operand stack, passes both the client and request to the hook, and restores the receiver and arguments only after the decision. `HttpInspection` extracts bounded metadata without subscribing to the body or reading a stream. For standard JDK `HttpURLConnection`, it reads request properties and redirect policy, never response headers or response content length (which could connect). Known NIO file writes similarly expose their destination path before execution.
+
+The automatic-redirect safeguard is evaluated before saved rules: known enabled redirect policies are denied while `blockAutomaticHttpRedirects` is true. Unknown policies remain unknown and follow ordinary policy evaluation. This does not implement per-hop validation.
 
 Before registering the transformer, the agent installs a tiny JDK-only guard JAR through `Instrumentation.appendToBootstrapClassLoaderSearch`. Instrumented classes call this shared bootstrap bridge, which synchronously dispatches to the agent's policy engine. Fabric's Knot loader deliberately cannot resolve implementation classes from the agent JAR: using direct `GuardHooks` references here caused `NoClassDefFoundError` during startup. ASM, Gson and the policy engine remain outside the bootstrap JAR. Packaging tests verify that the bridge stays nested and dependencies stay relocated.
 
 The GUI bridge also has a JDK-only path through `System.getProperties()`. This lets the agent and Fabric classes exchange a decision even when Knot creates separate copies of core classes in different class loaders.
+
+HTTP metadata crosses that bridge as a `Map<String, String>`, not a class-loader-specific DTO. Matching mod and agent builds are required. Raw request targets remain internal to policy matching; HTTP event and UI targets are sanitized. New GUI rules store `sha256:` exact-target fingerprints, while legacy wildcard patterns remain supported. A target fingerprint does not bind HTTP methods, headers or bodies.
 
 Asynchronous attribution normally recovers context from a lambda/callback class and its `ProtectionDomain`, including calls running in an executor. If a library completely replaces the callback, the source may be reported as unknown; the project does not invent attribution certainty.
 
