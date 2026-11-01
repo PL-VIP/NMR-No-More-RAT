@@ -11,9 +11,12 @@ Thank you for helping improve No More RAT.
 
 ## Build and test
 
-```powershell
-.\gradlew.bat :fabric:build :core:test :agent:check "-Pmc=1.21.4"
-.\tools\build-matrix.ps1
+```text
+# One target (Windows: gradlew.bat; Linux/macOS: ./gradlew)
+gradlew.bat :fabric:build :core:test :agent:check -Pmc=1.21.4
+
+# Every target, on Windows/Linux/macOS
+java tools/BuildMatrix.java --java-home "/path/to/jdk-25"
 ```
 
 Every change to bytecode instrumentation should include or update an agent test. Network coverage should verify both the API and method where relevant, especially GET and POST.

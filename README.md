@@ -132,8 +132,12 @@ The project has one exact Fabric build per Minecraft version. Do not mark one JA
 
 ### Build one exact Minecraft version
 
-```powershell
-.\gradlew.bat :fabric:build "-Pmc=1.21.4" "-Dorg.gradle.java.home=C:\Program Files\Java\jdk-25.0.4"
+```text
+# Windows
+gradlew.bat :fabric:build -Pmc=1.21.4 -Dorg.gradle.java.home="C:\Program Files\Java\jdk-25.0.4"
+
+# Linux / macOS
+./gradlew :fabric:build -Pmc=1.21.4 -Dorg.gradle.java.home="/path/to/jdk-25"
 ```
 
 Replace `1.21.4` with any value in [versions.json](versions.json). The result is written to:
@@ -145,8 +149,12 @@ agent/build/libs/no-more-rat-agent-<mod-version>.jar                    Standalo
 
 ### Build the complete release matrix
 
-```powershell
-.\tools\build-matrix.ps1 -JavaHome "C:\Program Files\Java\jdk-25.0.4"
+```text
+# Windows, Linux and macOS
+java tools/BuildMatrix.java --java-home "/path/to/jdk-25"
+
+# Optional: build and collect only selected targets (does not create the combined ZIP)
+java tools/BuildMatrix.java --java-home "/path/to/jdk-25" --versions 1.20.1 1.21.4 26.3
 ```
 
 This builds all supported targets, stops on the first failed target, then creates:
@@ -168,6 +176,7 @@ The automated checks cover policy rules, changed artifact hashes, configuration 
 - [Multi-version builds and verification](docs/MULTIVERSION.md)
 - [1.2.0 summary and release notes](docs/RELEASE-1.2.0.md)
 - [1.2.1 startup consent fix](docs/RELEASE-1.2.1.md)
+- [1.2.4 multi-version release notes](docs/RELEASE-1.2.4.md)
 - [1.2.4 multi-version release notes](docs/RELEASE-1.2.4.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security reporting policy](SECURITY.md)

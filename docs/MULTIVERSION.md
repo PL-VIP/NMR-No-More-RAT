@@ -9,11 +9,11 @@ Build with JDK 25 available for Gradle and JDK 21 installed for the shared test 
 ./gradlew :fabric:build -Pmc=26.3
 ```
 
-On Windows, use `gradlew.bat` or `tools/build-matrix.ps1 -JavaHome <JDK-25-directory>`. Quote complete `-P` arguments when invoking Gradle directly in PowerShell.
+On Windows, use `gradlew.bat`; on Linux and macOS, use `./gradlew`. The cross-platform full-matrix command is `java tools/BuildMatrix.java --java-home <JDK-25-directory>`.
 
 Each build writes to `fabric/build/<minecraft>/libs/`. Do not install two NMR variants together. Every variant has an exact Minecraft dependency; a build for one patch release does not imply compatibility with another.
 
-`tools/build-matrix.ps1` collects successful builds under `build/releases/<mod-version>/`, generates `SHA256SUMS.txt`, and creates a ZIP when building the full matrix. Development clients use separate `fabric/run/<minecraft>/` directories:
+`tools/BuildMatrix.java` collects successful builds under `build/releases/<mod-version>/`, generates `SHA256SUMS.txt`, and creates a ZIP when building the full matrix. It uses only the Java runtime and the repository's Gradle wrapper, so it works on Windows, Linux and macOS. Development clients use separate `fabric/run/<minecraft>/` directories:
 
 ```sh
 ./gradlew :fabric:runClient -Pmc=26.3
