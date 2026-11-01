@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Know what your Minecraft mods try to do — before it happens.</strong><br />
+  <strong>Know what your Minecraft mods try to do - before it happens.</strong><br />
   A client-side security firewall for Fabric, with version-specific builds from Minecraft 1.20.1 to 26.3.
 </p>
 
