@@ -18,4 +18,4 @@ When this project is hosted on GitHub, use a private security advisory. Otherwis
 
 ## Scope
 
-Reports about a documented limitation are welcome when they include a practical mitigation or a safe new interception point. Native code, JNI/JNA, `Unsafe`, replacement agents, and malicious modifications to No More RAT itself are outside the guaranteed boundary described in [docs/SECURITY_LIMITATIONS.md](docs/SECURITY_LIMITATIONS.md).
+Reports about a documented limitation are welcome when they include a practical mitigation or a safe new interception point. Native code, JNI/JNA, `Unsafe`, replacement agents, and malicious modifications to No More RAT itself are outside the guaranteed boundary described in [docs/SECURITY_LIMITATIONS.md](../docs/SECURITY_LIMITATIONS.md).

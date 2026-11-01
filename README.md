@@ -180,7 +180,7 @@ The automated checks cover policy rules, changed artifact hashes, configuration 
 - [1.2.1 startup consent fix](docs/RELEASE-1.2.1.md)
 - [1.2.4 multi-version release notes](docs/RELEASE-1.2.4.md)
 - [Contributing](CONTRIBUTING.md)
-- [Security reporting policy](SECURITY.md)
+- [Security reporting policy](.github/SECURITY.md)
 
 ## License
 
