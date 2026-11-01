@@ -23,27 +23,27 @@ final class FirewallBlockedScreen extends Screen {
     }
 
     @Override public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        context.fill(0, 0, width, height, 0xF0182029);
         super.render(context, mouseX, mouseY, delta);
         String method = request.parameters().getOrDefault("method", "");
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 74, 0xFF5555);
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 74, 0xFFFF5555);
         Text action = request.operation() == OperationType.HTTP
                 ? Text.translatable("no_more_rat.blocked.http", request.source().name(), method.isBlank() ? "HTTP" : method)
                 : Text.translatable("no_more_rat.blocked.operation", request.source().name(), request.operation());
-        context.drawCenteredTextWithShadow(textRenderer, action, width / 2, height / 2 - 42, 0xFFFFFF);
+        context.drawCenteredTextWithShadow(textRenderer, action, width / 2, height / 2 - 42, 0xFFFFFFFF);
         context.drawCenteredTextWithShadow(textRenderer,
                 textRenderer.trimToWidth(Text.translatable("no_more_rat.prompt.target", request.operation() == OperationType.HTTP
                         ? dev.nmrfirewall.core.HttpInspection.displayTarget(request.target())
                         : dev.nmrfirewall.core.SecretRedactor.redact(request.target())).getString(), Math.max(100, width - 40)),
-                width / 2, height / 2 - 22, 0xFFE080);
+                width / 2, height / 2 - 22, 0xFFFFE080);
         context.drawCenteredTextWithShadow(textRenderer,
                 textRenderer.trimToWidth(Text.translatable("no_more_rat.blocked.class", request.source().callerClass()).getString(), Math.max(100, width - 40)),
-                width / 2, height / 2 - 2, 0xC0C0C0);
+                width / 2, height / 2 - 2, 0xFFC0C0C0);
         Text reason = Text.translatable("automatic-http-redirects".equals(request.parameters().get("blockReason"))
                 ? "no_more_rat.blocked.redirects" : "no_more_rat.blocked.render_thread");
         int y = height / 2 + 20;
         for (var line : textRenderer.wrapLines(reason, Math.max(100, width - 40))) {
-            context.drawCenteredTextWithShadow(textRenderer, line, width / 2, y, 0xA0D8FF);
+            context.drawCenteredTextWithShadow(textRenderer, line, width / 2, y, 0xFFA0D8FF);
             y += 10;
         }
     }

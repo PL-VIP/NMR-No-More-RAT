@@ -99,6 +99,7 @@ class ConfigControlsTest {
                 """);
         PolicyConfig config = new PolicyStore().load(path);
         assertTrue(config.operationDecisions.isEmpty());
+        assertTrue(config.allowModConfigWrites);
         assertEquals(Decision.ALLOW, new PolicyEngine(config).evaluate(request(OperationType.HTTP)).decision());
         assertEquals(Decision.DENY, new PolicyEngine(config).evaluate(request(OperationType.PROCESS_START)).decision());
     }

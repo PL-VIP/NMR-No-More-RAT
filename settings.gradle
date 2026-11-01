@@ -7,4 +7,16 @@ pluginManagement {
 }
 
 rootProject.name = 'no-more-rat'
+def selected = providers.gradleProperty('mc').getOrElse(providers.gradleProperty('minecraft_version').get())
+if (selected != null) {
+    def targets = new groovy.json.JsonSlurper().parse(file('versions.json'))
+    def target = targets.find { it.minecraft == selected }
+    if (target == null) throw new GradleException("Unknown Minecraft target: ${selected}")
+    gradle.beforeProject { p ->
+        p.ext.minecraft_version = target.minecraft
+        p.ext.yarn_mappings = target.yarn ?: ''
+        p.ext.fabric_version = target.api
+        p.ext.target_java = target.java.toString()
+    }
+}
 include 'core', 'agent', 'fabric'

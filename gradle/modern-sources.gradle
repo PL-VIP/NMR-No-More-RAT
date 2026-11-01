@@ -1,0 +1,59 @@
+// Compile the shared UI against unobfuscated Minecraft 26.x names.
+// Generated files stay under the target build directory and are never edited manually.
+def targetVersion = project.minecraft_version
+def generated = layout.buildDirectory.dir('generated/sources/modern')
+def original = file('src/main/java')
+def modernSources = tasks.register('generateModernSources') {
+    inputs.dir(original)
+    inputs.property('targetVersion', targetVersion)
+    outputs.dir(generated)
+    doLast {
+        def imports = [
+            'net.minecraft.client.gui.DrawContext':'net.minecraft.client.gui.GuiGraphics',
+            'net.minecraft.client.gui.screen.':'net.minecraft.client.gui.screens.',
+            'net.minecraft.client.gui.widget.ButtonWidget':'net.minecraft.client.gui.components.Button',
+            'net.minecraft.client.gui.widget.TextFieldWidget':'net.minecraft.client.gui.components.EditBox',
+            'net.minecraft.client.gui.tooltip.Tooltip':'net.minecraft.client.gui.components.Tooltip',
+            'net.minecraft.text.Text':'net.minecraft.network.chat.Component',
+            'net.minecraft.text.OrderedText':'net.minecraft.util.FormattedCharSequence',
+            'net.minecraft.client.MinecraftClient':'net.minecraft.client.Minecraft'
+        ]
+        def names = [DrawContext:'GuiGraphics', Text:'Component', OrderedText:'FormattedCharSequence',
+            MinecraftClient:'Minecraft', ButtonWidget:'Button', TextFieldWidget:'EditBox',
+            textRenderer:'font', client:'minecraft', currentScreen:'screen', keyboard:'keyboardHandler',
+            addDrawableChild:'addRenderableWidget', clearChildren:'clearWidgets',
+            dimensions:'bounds', setPlaceholder:'setHint', setChangedListener:'setResponder',
+            getText:'getValue', setText:'setValue', setMaxLength:'setMaxLength',
+            drawCenteredTextWithShadow:'drawCenteredString', drawTextWithShadow:'drawString',
+            trimToWidth:'plainSubstrByWidth', wrapLines:'split', asOrderedText:'getVisualOrderText', literal:'literal', close:'onClose']
+        fileTree(original).matching { include '**/*.java' }.each { input ->
+            String text = input.getText('UTF-8')
+            imports.each { from, to -> text = text.replace(from, to) }
+            text = text.readLines().collect { line ->
+                if (!line.startsWith('import ') && !line.startsWith('package ')) {
+                    // Preserve string literals (including translation keys) while mapping Java identifiers.
+                    line = line.replaceAll(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b[A-Za-z_$][\w$]*\b/) { token ->
+                        names.get(token, token)
+                    }
+                }
+                line
+            }.join('\n') + '\n'
+            text = text.replace('Tooltip.of(', 'Tooltip.create(')
+            text = text.replace('GuiGraphics', 'GuiGraphicsExtractor')
+                .replace('void render(', 'void extractRenderState(')
+                .replace('super.render(', 'super.extractRenderState(')
+                .replace('.drawCenteredString(', '.centeredText(')
+                .replace('.drawString(', '.text(')
+            if (targetVersion in ['26.2', '26.3']) {
+                text = text.replace('minecraft.screen', 'minecraft.gui.screen()')
+                    .replace('minecraft.setScreen(', 'minecraft.gui.setScreen(')
+            }
+            def output = new File(generated.get().asFile, original.toPath().relativize(input.toPath()).toString())
+            output.parentFile.mkdirs()
+            output.setText(text, 'UTF-8')
+        }
+    }
+}
+sourceSets.main.java.setSrcDirs([generated])
+tasks.named('compileJava') { dependsOn modernSources }
+tasks.named('sourcesJar') { dependsOn modernSources }

@@ -145,16 +145,16 @@ final class FirewallPromptScreen extends Screen {
     private static Text known(String value) { return value == null || "unknown".equals(value) ? t("http.unknown") : Text.literal(value); }
 
     @Override public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        context.fill(0, 0, width, height, 0xF0182029);
         super.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 10, 0xFF7777);
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 10, 0xFFFF7777);
         context.drawCenteredTextWithShadow(textRenderer,
-                Text.translatable("no_more_rat.prompt.countdown", secondsRemaining()), width / 2, 26, 0xF0C674);
+                Text.translatable("no_more_rat.prompt.countdown", secondsRemaining()), width / 2, 26, 0xFFF0C674);
         int y = 44;
         for (int i = page * perPage; i < Math.min(lines.size(), (page + 1) * perPage); i++) {
-            context.drawTextWithShadow(textRenderer, lines.get(i), 14, y, 0xE1E8EF);
+            context.drawTextWithShadow(textRenderer, lines.get(i), 14, y, 0xFFE1E8EF);
             y += 12;
         }
-        context.drawTextWithShadow(textRenderer, (page + 1) + "/" + pages, 50, height - 23, 0xAAAAAA);
+        context.drawTextWithShadow(textRenderer, (page + 1) + "/" + pages, 50, height - 23, 0xFFAAAAAA);
     }
 }

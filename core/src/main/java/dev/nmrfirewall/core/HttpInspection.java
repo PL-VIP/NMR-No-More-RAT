@@ -90,7 +90,7 @@ public final class HttpInspection {
             sensitive |= lower.equals("authorization") || lower.equals("proxy-authorization") || lower.equals("cookie")
                     || lower.contains("token") || lower.contains("api-key") || lower.contains("apikey") || lower.contains("secret");
             if (lower.equals("content-type") && !headers.get(name).isEmpty()) {
-                String raw = headers.get(name).getFirst();
+                String raw = headers.get(name).get(0);
                 String media = raw.substring(0, Math.min(raw.length(), 128)).split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
                 type = switch (media) {
                     case "application/json", "application/x-www-form-urlencoded", "multipart/form-data", "text/plain",

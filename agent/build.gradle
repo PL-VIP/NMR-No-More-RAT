@@ -28,8 +28,8 @@ processResources {
 dependencies {
     implementation project(':core')
     implementation 'com.google.code.gson:gson:2.11.0'
-    implementation 'org.ow2.asm:asm:9.7.1'
-    implementation 'org.ow2.asm:asm-commons:9.7.1'
+    implementation 'org.ow2.asm:asm:9.10.1'
+    implementation 'org.ow2.asm:asm-commons:9.10.1'
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
@@ -51,7 +51,6 @@ shadowJar {
     mergeServiceFiles()
     relocate 'org.objectweb.asm', 'dev.nmrfirewall.agent.internal.asm'
     relocate 'com.google.gson', 'dev.nmrfirewall.agent.internal.gson'
-    manifest.inheritFrom tasks.jar.manifest
 }
 
 tasks.build.dependsOn tasks.shadowJar
@@ -88,7 +87,7 @@ sourceSets {
 }
 
 dependencies {
-    smokeImplementation 'net.fabricmc:fabric-loader:0.19.5'
+    smokeImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     smokeImplementation project(':core')
     smokeImplementation 'org.ow2.asm:asm:9.10.1'
     smokeImplementation 'net.fabricmc:sponge-mixin:0.17.4+mixin.0.8.7'
@@ -136,4 +135,17 @@ tasks.test {
     systemProperty 'nmr.agent.testAll', 'true'
     def sampleJar = providers.systemProperty('nmr.sampleJar')
     if (sampleJar.isPresent()) systemProperty 'nmr.sampleJar', sampleJar.get()
+}
+
+sourceSets {
+    configPromptSmoke {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+tasks.register('smokeConfigPrompt', JavaExec) {
+    dependsOn tasks.configPromptSmokeClasses
+    classpath = sourceSets.configPromptSmoke.runtimeClasspath
+    mainClass = 'dev.nmrfirewall.agent.ConfigPromptSmoke'
+    workingDir projectDir
 }

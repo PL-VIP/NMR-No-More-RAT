@@ -14,7 +14,7 @@ public final class PromptBridgeEndpoint {
                                              String target, Map<String, String> parameters) {
         SecurityRequest request = buildRequest(operation, modId, name, version, jarName, sha256, callerClass,
                 confidence, target, parameters);
-        return NoMoreRatClient.requestPrompt(request).thenApply(Decision::name);
+        return dev.nmrfirewall.core.DecisionFutures.map(NoMoreRatClient.requestPrompt(request), Decision::name);
     }
 
     public void notifyBlocked(String operation, String modId, String name, String version,

@@ -1,7 +1,8 @@
 plugins {
     id 'java'
-    id 'fabric-loom' version "${loom_version}" apply false
-    id 'com.gradleup.shadow' version '8.3.5' apply false
+    id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
+    id 'com.gradleup.shadow' version '9.2.2' apply false
 }
 
 allprojects {
@@ -16,19 +17,23 @@ allprojects {
 
 subprojects {
     apply plugin: 'java'
+    dependencies { testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4' }
 
     java {
-        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        toolchain.languageVersion = JavaLanguageVersion.of(project.name == 'fabric' && project.findProperty('target_java') == '25' ? 25 : 21)
         withSourcesJar()
     }
 
     tasks.withType(JavaCompile).configureEach {
-        options.release = 21
+        options.release = (project.name == 'fabric' ? Integer.parseInt(project.findProperty('target_java') ?: '21') : 17)
         options.encoding = 'UTF-8'
     }
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
         testLogging { events 'failed', 'skipped' }
+    }
+    tasks.matching { it.name == 'compileTestJava' || it.name == 'compileSmokeJava' }.configureEach {
+        options.release = 21
     }
 }

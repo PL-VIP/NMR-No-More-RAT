@@ -133,15 +133,15 @@ public final class FirewallScreen extends Screen {
     }
 
     @Override public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        context.fill(0, 0, width, height, 0xF0182029);
         super.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 12, 0xFFFFFF);
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 12, 0xFFFFFFFF);
         int y = 90;
         for (String row : rows.stream().limit(Math.max(1, (height - 130) / 12)).toList()) {
-            context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(row, width - 28), 14, y, 0xD8DEE9);
+            context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(row, width - 28), 14, y, 0xFFD8DEE9);
             y += 12;
         }
-        context.drawTextWithShadow(textRenderer, status, 14, height - 24, 0xA0A0A0);
+        context.drawTextWithShadow(textRenderer, status, 14, height - 24, 0xFFA0A0A0);
     }
 
     @Override public void close() { client.setScreen(parent); }

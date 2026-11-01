@@ -1,14 +1,15 @@
-plugins {
-    id 'fabric-loom'
-}
+def modern = project.minecraft_version.startsWith('26.')
+apply plugin: modern ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
-base { archivesName = project.archives_base_name }
+base { archivesName = "${project.archives_base_name}-${project.minecraft_version}" }
+layout.buildDirectory = file("build/${project.minecraft_version}")
+if (modern) apply from: rootProject.file('gradle/modern-sources.gradle')
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    if (!modern) mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    add(modern ? 'implementation' : 'modImplementation', "net.fabricmc:fabric-loader:${project.loader_version}")
+    add(modern ? 'implementation' : 'modImplementation', "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
     implementation project(':core')
     include project(':core')
     include 'com.google.code.gson:gson:2.11.0'
@@ -21,20 +22,66 @@ loom {
         client {
             client()
             vmArg "-javaagent:${project(':agent').tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath}"
-            runDir 'run'
+            runDir "run/${project.minecraft_version}"
         }
     }
 }
 
-tasks.named('runClient').configure { dependsOn project(':agent').tasks.named('shadowJar') }
+tasks.named('runClient').configure {
+    dependsOn project(':agent').tasks.named('shadowJar')
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(Integer.parseInt(project.target_java))
+    }
+}
 
 processResources {
     def modVersion = project.version.toString()
+    def mcVersion = project.minecraft_version
+    def javaVersion = project.findProperty('target_java') ?: '21'
+    def apiVersion = project.fabric_version
+    def loaderVersion = project.loader_version
     inputs.property 'version', modVersion
-    filesMatching('fabric.mod.json') { expand 'version': modVersion }
+    inputs.property 'minecraft', project.minecraft_version
+    inputs.property 'targetJava', project.findProperty('target_java') ?: '21'
+    inputs.property 'fabricApi', project.fabric_version
+    inputs.property 'loader', loaderVersion
+    filesMatching('fabric.mod.json') { expand version: modVersion, minecraft: mcVersion,
+            targetJava: javaVersion, fabricApi: apiVersion, loader: loaderVersion }
+    filesMatching('no_more_rat.mixins.json') { expand targetJava: javaVersion }
     dependsOn project(':agent').tasks.named('shadowJar')
     from(project(':agent').tasks.named('shadowJar').flatMap { it.archiveFile }) {
         into 'nmr-agent'
         rename { 'no-more-rat-agent.jar' }
     }
 }
+
+// Check the distributable, not only the development classpath.
+def releaseJar = tasks.named(modern ? 'jar' : 'remapJar')
+tasks.register('verifyReleaseJar') {
+    dependsOn releaseJar
+    def artifact = releaseJar.flatMap { it.archiveFile }
+    inputs.file(artifact)
+    doLast {
+        new java.util.zip.ZipFile(artifact.get().asFile).withCloseable { zip ->
+            def metadata = new groovy.json.JsonSlurper().parse(zip.getInputStream(zip.getEntry('fabric.mod.json')))
+            if (metadata.version != project.version.toString() || metadata.depends.minecraft != project.minecraft_version
+                    || metadata.depends.java != ">=${project.target_java}".toString()) {
+                throw new GradleException('Release metadata does not match the selected target')
+            }
+            ['nmr-agent/no-more-rat-agent.jar', 'assets/no_more_rat/lang/en_us.json',
+             'assets/no_more_rat/lang/pl_pl.json', 'dev/nmrfirewall/fabric/mixin/TitleScreenMixin.class'].each {
+                if (zip.getEntry(it) == null) throw new GradleException("Missing release entry: ${it}")
+            }
+            zip.entries().findAll { it.name.endsWith('.class') }.each { entry ->
+                zip.getInputStream(entry).withCloseable { stream ->
+                    def data = new DataInputStream(stream)
+                    data.readInt(); data.readUnsignedShort()
+                    if (data.readUnsignedShort() > 44 + Integer.parseInt(project.target_java)) {
+                        throw new GradleException("Class requires a newer Java version: ${entry.name}")
+                    }
+                }
+            }
+        }
+    }
+}
+tasks.named('check') { dependsOn tasks.named('verifyReleaseJar') }

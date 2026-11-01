@@ -22,6 +22,7 @@ public final class NoMoreRatClient implements ClientModInitializer {
         CompletableFuture<Decision> result = new CompletableFuture<>();
         MinecraftClient client = MinecraftClient.getInstance();
         client.execute(() -> {
+            if (result.isDone()) return;
             if (client.currentScreen instanceof FirewallPromptScreen) {
                 result.complete(Decision.DENY);
             } else {

@@ -4,7 +4,7 @@ Thank you for helping improve No More RAT.
 
 ## Before opening a change
 
-- Use Java 21.
+- Install JDK 21 and 25; run Gradle with JDK 25. Production bytecode targets the Java version selected in `versions.json`.
 - Keep enforcement fail-closed: an exception, timeout, missing identity, or missing UI must not silently allow a controlled operation.
 - Do not claim an API is protected without a test proving that denial happens before the original call.
 - Do not weaken TLS verification, log credentials, or add telemetry.
@@ -12,10 +12,13 @@ Thank you for helping improve No More RAT.
 ## Build and test
 
 ```powershell
-.\gradlew.bat clean build
+.\gradlew.bat :fabric:build :core:test :agent:check "-Pmc=1.21.4"
+.\tools\build-matrix.ps1
 ```
 
 Every change to bytecode instrumentation should include or update an agent test. Network coverage should verify both the API and method where relevant, especially GET and POST.
+
+Keep compatibility changes in the shared sources and `gradle/modern-sources.gradle`; never edit generated files. Run a client startup and permission-preview check for each affected API family before publishing artifacts. See [multi-version verification](docs/MULTIVERSION.md).
 
 ## Translations
 

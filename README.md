@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Know what your Minecraft mods try to do — before it happens.</strong><br />
-  A client-side security firewall for Fabric 1.21.4 and Java 21.
+  A client-side security firewall for Fabric, with version-specific builds from Minecraft 1.20.1 to 26.3.
 </p>
 
 <p align="center">
@@ -34,14 +34,14 @@ For each event, the interface can show the requesting mod, target, calling class
 
 ## Requirements
 
-- Minecraft **1.21.4**
-- Java **21**
-- Fabric Loader **0.16.10+**
-- Fabric API **0.118.0+1.21.4+**
+- Minecraft **1.20.1–26.3**, using the JAR for your **exact** game version. See [build targets and verification](docs/MULTIVERSION.md).
+- Java **17** for 1.20.1–1.20.4, **21** for 1.20.5–1.21.11, or **25** for 26.x.
+- Fabric Loader **0.20.1+**.
+- Fabric API for your game version; the minimum per target is pinned in [versions.json](versions.json).
 
 ## Install
 
-1. Download or build `no-more-rat-1.1.0.jar` and place it in your instance's `mods` folder.
+1. Download or build `no-more-rat-<minecraft>-<mod-version>.jar` and place it in your instance's `mods` folder. Install only one NMR variant.
 2. Start Minecraft once. The mod extracts its bundled agent here:
 
    ```text
@@ -66,17 +66,11 @@ Open the instance's **Options** or **Settings**, find Java/JVM arguments, then p
 
 ### Official Minecraft Launcher
 
-From the project folder, run:
+Open **Installations → your Fabric installation → Edit → More Options → JVM Arguments**. Append the argument copied by NMR, keeping the existing launcher arguments. To remove the agent, remove just that `-javaagent` argument.
 
-```powershell
-.\tools\install-agent.ps1
-```
+### Updating from an older NMR version
 
-It creates a dated backup of `launcher_profiles.json` and updates matching Fabric 1.21.4 profiles. To undo it:
-
-```powershell
-.\tools\remove-agent.ps1
-```
+Update both the mod and its extracted agent with the game closed. Install the matching new mod, open its JAR as a ZIP archive, and copy `nmr-agent/no-more-rat-agent.jar` over the instance's `config/no-more-rat/agent/no-more-rat-agent.jar`. Alternatively, use the standalone agent supplied with the same release and keep the filename expected by your existing JVM argument. Keep the `-javaagent` argument enabled. Replacing only the mod does not update the agent.
 
 ## Choose a protection mode
 
@@ -85,12 +79,20 @@ Open **No More RAT Security → Settings**. Changes are drafts until you press *
 | Profile | Behaviour |
 | --- | --- |
 | **Recommended protection** | Asks for supported network/file changes; blocks process creation, dynamic code, and listening ports; blocks unidentified sources. |
-| **Ask before each operation** | Asks for every supported category. A missing UI, timeout, or render-thread request still fails closed. |
+| **Ask before each operation** | Asks for every supported category once the game permission UI is available. Unavailable consent or a timeout fails closed. A verified mod's own configuration subtree has a narrowly scoped startup compatibility allowance. Other early render-thread requests fail closed. |
 | **Block all by default** | Blocks supported operations unless a saved rule explicitly permits them. |
 
 Under **Operation controls**, override each category individually with **Default**, **Ask**, **Block**, or **Allow**. Existing saved rules have priority over profile and category choices. An explicit **Ask** for a category can override strict mode's default block; broad high-risk allow rules remain guarded. Choosing **Trust this action** records only the requesting mod's exact JAR hash, operation, and target — it is not blanket trust for a mod.
 
 Settings also control the decision timeout, in-memory event buffer, and whether allowed operations are logged. Denials are always logged. The disk log rotates at 5 MiB.
+
+### Configuration during startup (1.2.4)
+
+Ordinary file reads are not intercepted. Minecraft initializes client mods before it can safely render its own permission screen; blocking a normal `config/<mod-id>` write at that point makes many mods crash before the game opens.
+
+Therefore, while the decision for `FILE_WRITE` is **Ask** and **Allow a mod's own config files** is enabled, NMR permits a verified mod to create or update only its own `config/<mod-id>` subtree. This is logged as `mod-config-compatibility`. It never permits No More RAT data, another mod's configuration, or paths outside `config`; explicit **Block** rules still win. Disable the setting in **Settings** for strict blocking.
+
+All other supported early-start operations fail closed until NMR's in-game permission UI is available. Once it is available, permission prompts show the origin and requested action before it happens.
 
 ## HTTP inspection before sending
 
@@ -120,17 +122,40 @@ The user interface follows Minecraft's selected language. English (`en_us`) is t
 
 ## Build from source
 
-With Java 21 installed:
+The project has one exact Fabric build per Minecraft version. Do not mark one JAR as compatible with the entire range.
+
+### Prerequisites
+
+- JDK **25** for Gradle and the 26.x targets. Pass its location explicitly when it is not your default JDK.
+- Java **17** to run 1.20.1–1.20.4 clients, Java **21** for 1.20.5–1.21.11 clients, and Java **25** for 26.x clients.
+- Internet access the first time Gradle downloads the target's Fabric/Minecraft dependencies.
+
+### Build one exact Minecraft version
 
 ```powershell
-.\gradlew.bat clean build
+.\gradlew.bat :fabric:build "-Pmc=1.21.4" "-Dorg.gradle.java.home=C:\Program Files\Java\jdk-25.0.4"
 ```
 
-Build outputs:
+Replace `1.21.4` with any value in [versions.json](versions.json). The result is written to:
 
 ```text
-fabric/build/libs/no-more-rat-1.1.0.jar       Fabric mod with embedded agent
-agent/build/libs/no-more-rat-agent-1.1.0.jar  Standalone Java agent
+fabric/build/<minecraft>/libs/no-more-rat-<minecraft>-<mod-version>.jar  Fabric mod with embedded agent
+agent/build/libs/no-more-rat-agent-<mod-version>.jar                    Standalone Java agent
+```
+
+### Build the complete release matrix
+
+```powershell
+.\tools\build-matrix.ps1 -JavaHome "C:\Program Files\Java\jdk-25.0.4"
+```
+
+This builds all supported targets, stops on the first failed target, then creates:
+
+```text
+build/releases/1.2.4/
+  no-more-rat-<minecraft>-1.2.4.jar   one JAR per exact Minecraft version
+  SHA256SUMS.txt                       checksums for the individual JARs
+  no-more-rat-1.2.4-multiversion.zip  convenience archive; do not place this ZIP in mods
 ```
 
 The automated checks cover policy rules, changed artifact hashes, configuration persistence, bytecode transformation, class-loader isolation, and pre-operation blocking for supported HTTP, TCP, file-write, process, and reflection paths. Details are in the [test matrix](docs/TEST_MATRIX.md).
@@ -140,6 +165,10 @@ The automated checks cover policy rules, changed artifact hashes, configuration 
 - [Architecture and threat model](docs/ARCHITECTURE.md)
 - [Security limitations and known gaps](docs/SECURITY_LIMITATIONS.md)
 - [Test matrix](docs/TEST_MATRIX.md)
+- [Multi-version builds and verification](docs/MULTIVERSION.md)
+- [1.2.0 summary and release notes](docs/RELEASE-1.2.0.md)
+- [1.2.1 startup consent fix](docs/RELEASE-1.2.1.md)
+- [1.2.4 multi-version release notes](docs/RELEASE-1.2.4.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security reporting policy](SECURITY.md)
 

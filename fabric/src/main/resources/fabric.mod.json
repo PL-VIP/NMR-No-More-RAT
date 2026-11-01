@@ -18,9 +18,9 @@
   },
   "mixins": ["no_more_rat.mixins.json"],
   "depends": {
-    "fabricloader": ">=0.16.10",
-    "minecraft": "1.21.4",
-    "java": ">=21",
-    "fabric-api": ">=0.118.0+1.21.4"
+    "fabricloader": ">=${loader}",
+    "minecraft": "${minecraft}",
+    "java": ">=${targetJava}",
+    "fabric-api": ">=${fabricApi}"
   }
 }

@@ -1,0 +1,35 @@
+name: Multi-version verification
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.targets.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: targets
+        run: echo "value=$(jq -c '[.[].minecraft]' versions.json)" >> "$GITHUB_OUTPUT"
+  build:
+    needs: matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        minecraft: ${{ fromJson(needs.matrix.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v4
+      - run: bash gradlew :fabric:build :core:test :agent:check -Pmc=${{ matrix.minecraft }} --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: no-more-rat-${{ matrix.minecraft }}
+          path: fabric/build/${{ matrix.minecraft }}/libs/*.jar
+          if-no-files-found: error

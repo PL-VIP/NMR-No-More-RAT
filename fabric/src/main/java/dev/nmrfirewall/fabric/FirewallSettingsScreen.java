@@ -10,7 +10,6 @@ import java.util.Locale;
 import java.util.function.Supplier;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ConfirmLinkScreen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
@@ -65,8 +64,8 @@ final class FirewallSettingsScreen extends Screen {
             button(t("config.save"), left + panel - 100, height - 27, 100, this::save);
         }
         button(t("action.cancel"), left + panel - 204, height - 27, 100, this::close);
-        button(t("config.repository"), left, height - 27, Math.min(110, panel - 210),
-                () -> ConfirmLinkScreen.open(this, "https://github.com/PL-VIP/NMR-No-More-RAT"));
+        if (panel >= 270) button(t("config.repository"), left, height - 27, Math.min(110, panel - 210),
+                () -> client.keyboard.setClipboard("https://github.com/PL-VIP/NMR-No-More-RAT"));
     }
 
     private List<Row> rows() {
@@ -98,6 +97,8 @@ final class FirewallSettingsScreen extends Screen {
                     () -> draft.unknownSourceDecision = next(draft.unknownSourceDecision)));
             rows.add(new Row(t("config.strict"), t("config.strict.help"), () -> enabled(draft.strictMode),
                     () -> draft.strictMode = !draft.strictMode));
+            rows.add(new Row(t("config.mod_config"), t("config.mod_config.help"), () -> enabled(draft.allowModConfigWrites),
+                    () -> draft.allowModConfigWrites = !draft.allowModConfigWrites));
             rows.add(new Row(t("config.redirects"), t("config.redirects.help"), () -> enabled(draft.blockAutomaticHttpRedirects),
                     () -> draft.blockAutomaticHttpRedirects = !draft.blockAutomaticHttpRedirects));
             rows.add(new Row(t("config.timeout"), t("config.timeout.help"),
@@ -122,7 +123,8 @@ final class FirewallSettingsScreen extends Screen {
         PolicyConfig candidate = new PolicyConfig();
         candidate.applyPreset(preset);
         if (draft.blockAutomaticHttpRedirects != candidate.blockAutomaticHttpRedirects
-                || draft.strictMode != candidate.strictMode || draft.defaultDecision != candidate.defaultDecision
+                || draft.strictMode != candidate.strictMode || draft.allowModConfigWrites != candidate.allowModConfigWrites
+                || draft.defaultDecision != candidate.defaultDecision
                 || draft.unknownSourceDecision != candidate.unknownSourceDecision) return false;
         for (OperationType operation : OperationType.values()) {
             if (draft.decisionFor(operation) != candidate.decisionFor(operation)) return false;
@@ -148,16 +150,16 @@ final class FirewallSettingsScreen extends Screen {
     private static Text t(String key) { return Text.translatable("no_more_rat." + key); }
 
     @Override public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        context.fill(0, 0, width, height, 0xF0182029);
         super.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 12, 0xFFFFFF);
-        context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(t("config.help").getString(), panel), left, 30, 0xAAB7C4);
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 12, 0xFFFFFFFF);
+        context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(t("config.help").getString(), panel), left, 30, 0xFFAAB7C4);
         int y = 84;
         for (Row row : visible) {
-            context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(row.label().getString(), panel - valueWidth - 10), left, y, 0xE1E8EF);
+            context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(row.label().getString(), panel - valueWidth - 10), left, y, 0xFFE1E8EF);
             y += 30;
         }
-        context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(status.getString(), panel - 155), left + 155, height - 51, 0xF0C674);
+        context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(status.getString(), panel - 155), left + 155, height - 51, 0xFFF0C674);
     }
 
     @Override public void close() { client.setScreen(parent); }

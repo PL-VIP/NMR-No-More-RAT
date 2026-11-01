@@ -14,6 +14,8 @@ public final class PolicyConfig {
     public int maxLogEntries = 2000;
     public boolean logAllowedOperations = true;
     public boolean blockAutomaticHttpRedirects = true;
+    /** Lets a known Fabric mod create and update only its own config/<mod-id> data while ASK is selected. */
+    public boolean allowModConfigWrites = true;
     public Map<OperationType, Decision> operationDecisions = new EnumMap<>(OperationType.class);
     public List<PolicyRule> rules = new ArrayList<>();
 
@@ -54,6 +56,7 @@ public final class PolicyConfig {
         maxLogEntries = other.maxLogEntries;
         logAllowedOperations = other.logAllowedOperations;
         blockAutomaticHttpRedirects = other.blockAutomaticHttpRedirects;
+        allowModConfigWrites = other.allowModConfigWrites;
         operationDecisions = new EnumMap<>(OperationType.class);
         operationDecisions.putAll(other.operationDecisions);
     }

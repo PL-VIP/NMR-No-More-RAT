@@ -14,7 +14,9 @@ import dev.nmrfirewall.core.HttpInspection;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 final class AgentRuntime {
@@ -25,6 +27,8 @@ final class AgentRuntime {
     private static volatile EventJournal journal;
     private static volatile long lastConfigModified;
     private static final ThreadLocal<Boolean> INSIDE = ThreadLocal.withInitial(() -> false);
+    /** Never persisted: removes duplicate consent prompts without creating a permanent allow rule. */
+    private static final Set<SessionPermission> SESSION_PERMISSIONS = ConcurrentHashMap.newKeySet();
 
     private AgentRuntime() { }
 
@@ -60,9 +64,25 @@ final class AgentRuntime {
             SecurityRequest request = new SecurityRequest(operation, resolved.identity(), target, parameters);
             // The agent and the trusted UI are excluded from instrumentation. Every other supported
             // NIO write into this directory is therefore an untrusted attempt to alter policy/log state.
-            PolicyResult result = operation == OperationType.FILE_WRITE && ProtectedPath.contains(configFile.getParent(), target)
-                    ? new PolicyResult(Decision.DENY, "protected-no-more-rat-data") : engine.evaluate(request);
+            PolicyResult result;
+            if (operation == OperationType.FILE_WRITE && ProtectedPath.contains(configFile.getParent(), target)) {
+                result = new PolicyResult(Decision.DENY, "protected-no-more-rat-data");
+            } else {
+                result = engine.evaluate(request);
+                if (result.decision() == Decision.ASK
+                        && ModConfigCompatibility.allows(request, configFile.getParent(), engine.config())) {
+                    result = new PolicyResult(Decision.ALLOW, "mod-config-compatibility");
+                }
+            }
+            SessionPermission permission = result.decision() == Decision.ASK
+                    && ConfigWritePrompt.eligible(request, configFile.getParent()) ? SessionPermission.from(request) : null;
+            if (permission != null && SESSION_PERMISSIONS.contains(permission)) {
+                result = new PolicyResult(Decision.ALLOW, "session-file-consent");
+            }
             Decision finalDecision = resolveAsk(request, result);
+            if (permission != null && result.decision() == Decision.ASK && finalDecision == Decision.ALLOW) {
+                SESSION_PERMISSIONS.add(permission);
+            }
             SecurityEvent event = new SecurityEvent(UUID.randomUUID(), Instant.now(), operation, resolved.identity(),
                     target, parameters, resolved.stack(), result.ruleId(), finalDecision);
             if (journal != null && (finalDecision != Decision.ALLOW || engine.config().logAllowedOperations)) journal.append(event);
@@ -115,7 +135,7 @@ final class AgentRuntime {
         }
         if (value instanceof java.net.SocketAddress address) return new TargetDescription(address.toString(), Map.of());
         if (value instanceof java.nio.file.Path path) {
-            return new TargetDescription(path.toAbsolutePath().normalize().toString(), Map.of());
+            return new TargetDescription(path.toAbsolutePath().normalize().toString(), Map.of("api", fallback));
         }
         if (value instanceof java.net.DatagramPacket packet) {
             return new TargetDescription(String.valueOf(packet.getSocketAddress()), Map.of());
@@ -142,6 +162,22 @@ final class AgentRuntime {
 
     private static Decision resolveAsk(SecurityRequest request, PolicyResult result) {
         if (result.decision() != Decision.ASK) return result.decision();
+        // Minecraft cannot render its own consent screen while its initialization thread waits.
+        // This separate desktop dialog grants only this call, never blanket FILE_WRITE access.
+        if (ConfigWritePrompt.eligible(request, configFile.getParent())) {
+            java.util.concurrent.CompletableFuture<Decision> consent = null;
+            try {
+                consent = ConfigWritePrompt.ask(request, configFile.getParent(), engine.config().promptTimeoutSeconds);
+                return consent.get(engine.config().promptTimeoutSeconds, TimeUnit.SECONDS);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                if (consent != null) consent.cancel(false);
+                return Decision.DENY;
+            } catch (Exception | LinkageError unavailable) {
+                if (consent != null) consent.cancel(false);
+                return Decision.DENY;
+            }
+        }
         if (isLikelyRenderThread()) {
             notifySharedBridge(request);
             return Decision.DENY;
@@ -174,7 +210,7 @@ final class AgentRuntime {
                             source.jarName(), source.sha256(), source.callerClass(), source.confidence().name(),
                             request.target(), request.parameters());
             java.util.concurrent.CompletableFuture<?> raw = (java.util.concurrent.CompletableFuture<?>) response;
-            return raw.thenApply(value -> Decision.valueOf(String.valueOf(value)));
+            return dev.nmrfirewall.core.DecisionFutures.map(raw, value -> Decision.valueOf(String.valueOf(value)));
         } catch (ReflectiveOperationException | RuntimeException failure) {
             return null;
         }
@@ -233,4 +269,14 @@ final class AgentRuntime {
     }
 
     private record TargetDescription(String target, Map<String, String> parameters) { }
+
+    private record SessionPermission(OperationType operation, String artifactSha256, String target, String api) {
+        static SessionPermission from(SecurityRequest request) {
+            String normalized;
+            try { normalized = Path.of(request.target()).toAbsolutePath().normalize().toString(); }
+            catch (Exception malformed) { normalized = request.target(); }
+            return new SessionPermission(request.operation(), request.source().sha256(), normalized,
+                    request.parameters().getOrDefault("api", ""));
+        }
+    }
 }
