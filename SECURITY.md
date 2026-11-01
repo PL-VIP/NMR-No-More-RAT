@@ -1,8 +1,8 @@
 # Security policy
 
-## Supported version
+## Supported versions
 
-Security fixes currently target the latest release on the Minecraft 1.21.4 branch.
+Security fixes target the current release on `main`: **No More RAT 1.2.4** for every Minecraft version shipped with that release (1.20.1–1.21.11 and 26.1–26.3). The `1.0.0-1.21.4` and `1.1.0-1.21.4` branches are retained as historical source for older releases and do not receive new security fixes.
 
 ## Reporting a vulnerability
 

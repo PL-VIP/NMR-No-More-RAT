@@ -41,7 +41,7 @@ For each event, the interface can show the requesting mod, target, calling class
 
 ## Install
 
-1. Download or build `no-more-rat-<minecraft>-<mod-version>.jar` and place it in your instance's `mods` folder. Install only one NMR variant.
+1. Download the JAR for your exact Minecraft version from the [latest GitHub release](https://github.com/PL-VIP/NMR-No-More-RAT/releases/latest), or build `no-more-rat-<minecraft>-<mod-version>.jar` yourself. Place it in your instance's `mods` folder and install only one NMR variant.
 2. Start Minecraft once. The mod extracts its bundled agent here:
 
    ```text
@@ -166,6 +166,8 @@ build/releases/1.2.4/
   no-more-rat-1.2.4-multiversion.zip  convenience archive; do not place this ZIP in mods
 ```
 
+For normal installation, use an exact-version JAR from [GitHub Releases](https://github.com/PL-VIP/NMR-No-More-RAT/releases). Official releases also include `SHA256SUMS.txt` for verifying the downloaded JARs. The combined ZIP is only a convenience archive and must not be placed in `mods`.
+
 The automated checks cover policy rules, changed artifact hashes, configuration persistence, bytecode transformation, class-loader isolation, and pre-operation blocking for supported HTTP, TCP, file-write, process, and reflection paths. Details are in the [test matrix](docs/TEST_MATRIX.md).
 
 ## Documentation
@@ -176,7 +178,6 @@ The automated checks cover policy rules, changed artifact hashes, configuration 
 - [Multi-version builds and verification](docs/MULTIVERSION.md)
 - [1.2.0 summary and release notes](docs/RELEASE-1.2.0.md)
 - [1.2.1 startup consent fix](docs/RELEASE-1.2.1.md)
-- [1.2.4 multi-version release notes](docs/RELEASE-1.2.4.md)
 - [1.2.4 multi-version release notes](docs/RELEASE-1.2.4.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security reporting policy](SECURITY.md)

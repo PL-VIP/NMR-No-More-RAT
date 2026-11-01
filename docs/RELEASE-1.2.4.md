@@ -13,4 +13,4 @@ Fabric can invoke a mod's configuration setup before Minecraft has a usable perm
 
 ## Distribution
 
-Use only the JAR matching the exact Minecraft version. Update the embedded/standalone Java agent together with the Fabric JAR. The `build/releases/1.2.4` folder includes individual JARs, SHA-256 checksums and the combined ZIP.
+Use only the JAR matching the exact Minecraft version. Update the embedded/standalone Java agent together with the Fabric JAR. The [v1.2.4 GitHub release](https://github.com/PL-VIP/NMR-No-More-RAT/releases/tag/v1.2.4) includes individual JARs, `SHA256SUMS.txt`, and the combined ZIP; do not place that ZIP in `mods`.
